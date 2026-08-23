@@ -161,11 +161,11 @@
       <div class="form-group">
         <label>Selecione o Campeonato</label>
         <select id="competicaoTabela" onchange="carregarTabela()">
-          <option value="4351">🇧🇷 Brasileirão Série A</option>
-          <option value="4328">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
-          <option value="4335">🇪🇸 La Liga</option>
-          <option value="4332">🇮🇹 Serie A (Itália)</option>
-          <option value="4334">🇫🇷 Ligue 1</option>
+          <option value="BSA">🇧🇷 Brasileirão Série A</option>
+          <option value="PL">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
+          <option value="PD">🇪🇸 La Liga</option>
+          <option value="SA">🇮🇹 Serie A (Itália)</option>
+          <option value="FL1">🇫🇷 Ligue 1</option>
         </select>
       </div>
       <div id="tabelaContainer" style="overflow-x: auto;"></div>
@@ -243,58 +243,49 @@
 
     async function carregarTabela() {
       const container = document.getElementById('tabelaContainer');
-      const idLiga = document.getElementById('competicaoTabela').value;
+      const leagueCode = document.getElementById('competicaoTabela').value;
       container.innerHTML = `<div class="spinner"></div>`;
 
-      // Anos para testar caso uma temporada não esteja cadastrada
-      const temporadas = ['2026', '2025-2026', '2025', '2024-2025', '2024'];
-      let table = [];
+      try {
+        const response = await fetch(`https://api.openligadb.de/getbltable/${leagueCode}/2025`);
+        if (!response.ok) throw new Error();
+        const data = await response.json();
 
-      for (const s of temporadas) {
-        try {
-          const url = `https://www.thesportsdb.com/api/v1/json/3/lookuptable.php?l=${idLiga}&s=${s}`;
-          const response = await fetch(url);
-          const data = await response.json();
-          if (data && data.table && data.table.length > 0) {
-            table = data.table;
-            break;
-          }
-        } catch (e) {
-          continue;
-        }
-      }
+        if (!data || data.length === 0) throw new Error();
 
-      if (table.length === 0) {
-        container.innerHTML = `<p style="text-align:center; color: var(--muted); font-size: 0.85rem; padding: 10px;">Tabela indisponível no momento.</p>`;
-        return;
-      }
+        let html = `
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Time</th>
+                <th>P</th>
+                <th>J</th>
+                <th>SG</th>
+              </tr>
+            </thead>
+            <tbody>`;
 
-      let html = `
-        <table>
-          <thead>
+        data.forEach((row, i) => {
+          html += `
             <tr>
-              <th>#</th>
-              <th>Time</th>
-              <th>P</th>
-              <th>J</th>
-              <th>SG</th>
-            </tr>
-          </thead>
-          <tbody>`;
+              <td>${i + 1}</td>
+              <td>${row.teamName || row.shortName}</td>
+              <td><b>${row.points}</b></td>
+              <td>${row.matches}</td>
+              <td>${row.goalDiff}</td>
+            </tr>`;
+        });
 
-      table.forEach(row => {
-        html += `
-          <tr>
-            <td>${row.intRank}</td>
-            <td>${row.strTeam}</td>
-            <td><b>${row.intPoints}</b></td>
-            <td>${row.intPlayed}</td>
-            <td>${row.intGoalDifference}</td>
-          </tr>`;
-      });
+        html += `</tbody></table>`;
+        container.innerHTML = html;
 
-      html += `</tbody></table>`;
-      container.innerHTML = html;
+      } catch (e) {
+        container.innerHTML = `<p style="text-align:center; color: var(--muted); font-size: 0.85rem; padding: 15px;">
+          Tabela temporariamente indisponível para esta liga via API gratuita.<br><br>
+          <span style="color: var(--primary);">Dica:</span> Utilize o <b>Analisador IA</b> para consultar o momento e estatísticas dos times.
+        </p>`;
+      }
     }
 
     async function carregarJogos() {

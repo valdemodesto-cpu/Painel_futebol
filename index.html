@@ -145,15 +145,11 @@
         <label>Selecione a Competição</label>
         <select id="competicaoJogos" onchange="carregarJogos()">
           <option value="BSA">🇧🇷 Brasileirão Série A</option>
-          <option value="CLI">🏆 Copa Libertadores</option>
-          <option value="CLI">🏆 Copa Sul-Americana</option>
-          <option value="PL">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League (Inglaterra)</option>
-          <option value="PD">🇪🇸 La Liga (Espanha)</option>
+          <option value="PL">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
+          <option value="PD">🇪🇸 La Liga</option>
           <option value="SA">🇮🇹 Serie A (Itália)</option>
-          <option value="FL1">🇫🇷 Ligue 1 (França)</option>
+          <option value="FL1">🇫🇷 Ligue 1</option>
           <option value="CL">🇪🇺 UEFA Champions League</option>
-          <option value="PPL">🇵🇹 Primeira Liga (Portugal)</option>
-          <option value="DED">🇳🇱 Eredivisie (Holanda)</option>
         </select>
       </div>
       <div id="listaJogos"></div>
@@ -167,15 +163,11 @@
         <label>Selecione o Campeonato</label>
         <select id="competicaoTabela" onchange="carregarTabela()">
           <option value="BSA">🇧🇷 Brasileirão Série A</option>
-          <option value="CLI">🏆 Copa Libertadores</option>
-          <option value="CLI">🏆 Copa Sul-Americana</option>
-          <option value="PL">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League (Inglaterra)</option>
-          <option value="PD">🇪🇸 La Liga (Espanha)</option>
+          <option value="PL">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
+          <option value="PD">🇪🇸 La Liga</option>
           <option value="SA">🇮🇹 Serie A (Itália)</option>
-          <option value="FL1">🇫🇷 Ligue 1 (França)</option>
+          <option value="FL1">🇫🇷 Ligue 1</option>
           <option value="CL">🇪🇺 UEFA Champions League</option>
-          <option value="PPL">🇵🇹 Primeira Liga (Portugal)</option>
-          <option value="DED">🇳🇱 Eredivisie (Holanda)</option>
         </select>
       </div>
       <div id="tabelaContainer" style="overflow-x: auto;"></div>
@@ -195,7 +187,7 @@
         </div>
         <div class="form-group">
           <label>Liga / Campeonato</label>
-          <input type="text" id="liga" placeholder="Ex: Libertadores">
+          <input type="text" id="liga" placeholder="Ex: Brasileirão Série A">
         </div>
       </div>
 
@@ -206,7 +198,7 @@
         </div>
         <div class="form-group">
           <label>Time Fora / Visitante</label>
-          <input type="text" id="manualAway" placeholder="Ex: River Plate">
+          <input type="text" id="manualAway" placeholder="Ex: Palmeiras">
         </div>
       </div>
 
@@ -227,7 +219,7 @@
 
       <button id="btnAnalisar" onclick="analisarComIA()">Gerar Análise</button>
       <div style="text-align: right; margin-top: 8px;">
-        <a href="#" onclick="redefinirChave()" style="color: var(--muted); font-size: 0.75rem;">Alterar Chave API</a>
+        <a href="#" onclick="redefinirChave()" style="color: var(--muted); font-size: 0.75rem;">Alterar Chave API do Gemini</a>
       </div>
       <div id="analiseArea"></div>
     </div>
@@ -266,12 +258,13 @@
           headers: { 'X-Auth-Token': FOOTBALL_API_KEY }
         });
 
-        if (!response.ok) throw new Error(`Status HTTP: ${response.status}`);
+        if (response.status === 403) throw new Error('Limite gratuito de requisições atingido nesta liga. Aguarde 1 minuto.');
+        if (!response.ok) throw new Error(`Erro ao carregar dados (${response.status})`);
 
         const data = await response.json();
         const standings = data.standings?.[0]?.table;
 
-        if (!standings) throw new Error('Dados indisponíveis para esta competição');
+        if (!standings) throw new Error('Tabela não disponível no momento');
 
         let html = `
           <table>
@@ -301,7 +294,7 @@
         container.innerHTML = html;
 
       } catch (e) {
-        container.innerHTML = `<p style="color:var(--danger); text-align:center; font-size:0.85rem;">Erro ao carregar tabela (${e.message}).</p>`;
+        container.innerHTML = `<p style="color:var(--danger); text-align:center; font-size:0.85rem; padding: 10px;">${e.message}. Se o erro persistir, digite os times manualmente na aba "Analisador IA".</p>`;
       }
     }
 
@@ -318,13 +311,14 @@
           headers: { 'X-Auth-Token': FOOTBALL_API_KEY }
         });
 
-        if (!response.ok) throw new Error(`Status HTTP: ${response.status}`);
+        if (response.status === 403) throw new Error('Limite gratuito de requisições atingido. Aguarde 1 minuto.');
+        if (!response.ok) throw new Error(`Erro ao buscar jogos (${response.status})`);
 
         const data = await response.json();
         const matches = data.matches || [];
 
         if (matches.length === 0) {
-          container.innerHTML = `<p style="text-align:center; color: var(--muted); font-size: 0.85rem; padding: 10px;">Nenhum jogo agendado encontrado nesta competição no momento.</p>`;
+          container.innerHTML = `<p style="text-align:center; color: var(--muted); font-size: 0.85rem; padding: 10px;">Nenhum jogo agendado recente nesta competição. Você pode preencher os times manualmente na aba "Analisador IA".</p>`;
           return;
         }
 
@@ -348,7 +342,7 @@
         container.innerHTML = html;
 
       } catch (e) {
-        container.innerHTML = `<p style="color:var(--danger); text-align:center; font-size:0.85rem;">Erro ao carregar jogos (${e.message}).</p>`;
+        container.innerHTML = `<p style="color:var(--danger); text-align:center; font-size:0.85rem; padding: 10px;">${e.message}<br><br><b>Dica:</b> Você ainda pode realizar análises normalmente digitando os times na aba "Analisador IA".</p>`;
       }
     }
 
@@ -402,7 +396,7 @@
 Retorne um JSON contendo: mercado, entrada, probabilidade, confianca e justificativa.`;
 
       try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
         const response = await fetch(url, {
           method: 'POST',

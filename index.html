@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel de Futebol & IA</title>
+  <title>Datafoot IA</title>
   <link rel="icon" type="image/png" href="1787440803187.png">
   <link rel="apple-touch-icon" href="1787440803187.png">
   <style>
@@ -130,7 +130,7 @@
 </head>
 <body>
 
-  <h1>Painel de Futebol & IA</h1>
+  <h1>Datafoot IA</h1>
 
   <div class="tabs">
     <div class="tab active" onclick="switchTab(0)">⚽ Jogos Hoje</div>
@@ -145,15 +145,15 @@
         <label>Selecione a Competição</label>
         <select id="competicaoJogos" onchange="carregarJogos()">
           <option value="BSA">🇧🇷 Brasileirão Série A</option>
+          <option value="CLI">🏆 Copa Libertadores</option>
+          <option value="CLI">🏆 Copa Sul-Americana</option>
           <option value="PL">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League (Inglaterra)</option>
           <option value="PD">🇪🇸 La Liga (Espanha)</option>
           <option value="SA">🇮🇹 Serie A (Itália)</option>
           <option value="FL1">🇫🇷 Ligue 1 (França)</option>
           <option value="CL">🇪🇺 UEFA Champions League</option>
-          <option value="ELC">🏴󠁧󠁢󠁥󠁮󠁧󠁿 EFL Championship</option>
           <option value="PPL">🇵🇹 Primeira Liga (Portugal)</option>
           <option value="DED">🇳🇱 Eredivisie (Holanda)</option>
-          <option value="WC">🌍 Copa do Mundo / FIFA</option>
         </select>
       </div>
       <div id="listaJogos"></div>
@@ -167,15 +167,15 @@
         <label>Selecione o Campeonato</label>
         <select id="competicaoTabela" onchange="carregarTabela()">
           <option value="BSA">🇧🇷 Brasileirão Série A</option>
+          <option value="CLI">🏆 Copa Libertadores</option>
+          <option value="CLI">🏆 Copa Sul-Americana</option>
           <option value="PL">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League (Inglaterra)</option>
           <option value="PD">🇪🇸 La Liga (Espanha)</option>
           <option value="SA">🇮🇹 Serie A (Itália)</option>
           <option value="FL1">🇫🇷 Ligue 1 (França)</option>
           <option value="CL">🇪🇺 UEFA Champions League</option>
-          <option value="ELC">🏴󠁧󠁢󠁥󠁮󠁧󠁿 EFL Championship</option>
           <option value="PPL">🇵🇹 Primeira Liga (Portugal)</option>
           <option value="DED">🇳🇱 Eredivisie (Holanda)</option>
-          <option value="WC">🌍 Copa do Mundo / FIFA</option>
         </select>
       </div>
       <div id="tabelaContainer" style="overflow-x: auto;"></div>
@@ -195,7 +195,7 @@
         </div>
         <div class="form-group">
           <label>Liga / Campeonato</label>
-          <input type="text" id="liga" placeholder="Ex: Brasileirão">
+          <input type="text" id="liga" placeholder="Ex: Libertadores">
         </div>
       </div>
 
@@ -206,7 +206,7 @@
         </div>
         <div class="form-group">
           <label>Time Fora / Visitante</label>
-          <input type="text" id="manualAway" placeholder="Ex: Vasco">
+          <input type="text" id="manualAway" placeholder="Ex: River Plate">
         </div>
       </div>
 
@@ -231,7 +231,8 @@
   </div>
 
   <script>
-    const GEMINI_API_KEY = 'AQ.Ab8RN6JTqKAta9oKhuHY1t7PjXiS32ul3EQNG5fS10Mzehl1gA'; 
+    // IMPORTANTE: Insira sua chave que começa com "AIzaSy..." na linha abaixo!
+    const GEMINI_API_KEY = 'AQ.Ab8RN6LIb38Dkn7fT0yUMjrq0bbhkhniBWwj0Bh4uQ6BRvI-OA'; 
     const FOOTBALL_API_KEY = '9885b8e085ef4ff8bbeab09d25043cab'; 
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -377,8 +378,8 @@
       const liga = document.getElementById('liga').value;
       const esporte = document.getElementById('esporte').value;
 
-      if (!GEMINI_API_KEY || GEMINI_API_KEY.includes('SUA_CHAVE_GEMINI')) {
-        return alert('Configure sua chave de API do Gemini no código JS!');
+      if (!GEMINI_API_KEY || GEMINI_API_KEY.includes('COLE_SUA_CHAVE_AQUI')) {
+        return alert('Cole sua chave válida do Gemini (AIzaSy...) no código!');
       }
       if (!home || !away) {
         return alert('Preencha os dois times!');
@@ -391,7 +392,6 @@
 Retorne um JSON contendo: mercado, entrada, probabilidade, confianca e justificativa.`;
 
       try {
-        // Atualizado para o endpoint do modelo gemini-3.6-flash
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`;
 
         const response = await fetch(url, {

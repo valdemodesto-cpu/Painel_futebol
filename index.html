@@ -246,47 +246,55 @@
       const idLiga = document.getElementById('competicaoTabela').value;
       container.innerHTML = `<div class="spinner"></div>`;
 
-      try {
-        const url = `https://www.thesportsdb.com/api/v1/json/3/lookuptable.php?l=${idLiga}&s=2024-2025`;
-        const response = await fetch(url);
-        const data = await response.json();
-        const table = data.table || [];
+      // Anos para testar caso uma temporada não esteja cadastrada
+      const temporadas = ['2026', '2025-2026', '2025', '2024-2025', '2024'];
+      let table = [];
 
-        if (table.length === 0) {
-          container.innerHTML = `<p style="text-align:center; color: var(--muted); font-size: 0.85rem; padding: 10px;">Tabela indisponível no momento.</p>`;
-          return;
+      for (const s of temporadas) {
+        try {
+          const url = `https://www.thesportsdb.com/api/v1/json/3/lookuptable.php?l=${idLiga}&s=${s}`;
+          const response = await fetch(url);
+          const data = await response.json();
+          if (data && data.table && data.table.length > 0) {
+            table = data.table;
+            break;
+          }
+        } catch (e) {
+          continue;
         }
-
-        let html = `
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Time</th>
-                <th>P</th>
-                <th>J</th>
-                <th>SG</th>
-              </tr>
-            </thead>
-            <tbody>`;
-
-        table.forEach(row => {
-          html += `
-            <tr>
-              <td>${row.intRank}</td>
-              <td>${row.strTeam}</td>
-              <td><b>${row.intPoints}</b></td>
-              <td>${row.intPlayed}</td>
-              <td>${row.intGoalDifference}</td>
-            </tr>`;
-        });
-
-        html += `</tbody></table>`;
-        container.innerHTML = html;
-
-      } catch (e) {
-        container.innerHTML = `<p style="color:var(--danger); text-align:center; font-size:0.85rem; padding: 10px;">Erro ao carregar tabela.</p>`;
       }
+
+      if (table.length === 0) {
+        container.innerHTML = `<p style="text-align:center; color: var(--muted); font-size: 0.85rem; padding: 10px;">Tabela indisponível no momento.</p>`;
+        return;
+      }
+
+      let html = `
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Time</th>
+              <th>P</th>
+              <th>J</th>
+              <th>SG</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+      table.forEach(row => {
+        html += `
+          <tr>
+            <td>${row.intRank}</td>
+            <td>${row.strTeam}</td>
+            <td><b>${row.intPoints}</b></td>
+            <td>${row.intPlayed}</td>
+            <td>${row.intGoalDifference}</td>
+          </tr>`;
+      });
+
+      html += `</tbody></table>`;
+      container.innerHTML = html;
     }
 
     async function carregarJogos() {

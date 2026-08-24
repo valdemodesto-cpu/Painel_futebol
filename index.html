@@ -144,11 +144,11 @@
       <div class="form-group">
         <label>Selecione a Competição</label>
         <select id="competicaoJogos" onchange="carregarJogos()">
-          <option value="4351">🇧🇷 Brasileirão Série A</option>
-          <option value="4328">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
-          <option value="4335">🇪🇸 La Liga</option>
-          <option value="4332">🇮🇹 Serie A (Itália)</option>
-          <option value="4334">🇫🇷 Ligue 1</option>
+          <option value="Brasileirão Série A">🇧🇷 Brasileirão Série A</option>
+          <option value="Premier League">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
+          <option value="La Liga">🇪🇸 La Liga</option>
+          <option value="Serie A Itália">🇮🇹 Serie A (Itália)</option>
+          <option value="Ligue 1">🇫🇷 Ligue 1</option>
         </select>
       </div>
       <div id="listaJogos"></div>
@@ -161,11 +161,11 @@
       <div class="form-group">
         <label>Selecione o Campeonato</label>
         <select id="competicaoTabela" onchange="carregarTabela()">
-          <option value="BSA">🇧🇷 Brasileirão Série A</option>
-          <option value="PL">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
-          <option value="PD">🇪🇸 La Liga</option>
-          <option value="SA">🇮🇹 Serie A (Itália)</option>
-          <option value="FL1">🇫🇷 Ligue 1</option>
+          <option value="Brasileirão Série A">🇧🇷 Brasileirão Série A</option>
+          <option value="Premier League">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
+          <option value="La Liga">🇪🇸 La Liga</option>
+          <option value="Serie A Itália">🇮🇹 Serie A (Itália)</option>
+          <option value="Ligue 1">🇫🇷 Ligue 1</option>
         </select>
       </div>
       <div id="tabelaContainer" style="overflow-x: auto;"></div>
@@ -216,9 +216,6 @@
       </div>
 
       <button id="btnAnalisar" onclick="analisarComIA()">Gerar Análise</button>
-      <div style="text-align: right; margin-top: 8px;">
-        <a href="#" onclick="redefinirChave()" style="color: var(--muted); font-size: 0.75rem;">Alterar Chave API do Gemini</a>
-      </div>
       <div id="analiseArea"></div>
     </div>
   </div>
@@ -241,17 +238,136 @@
       if(index === 1) carregarTabela();
     }
 
-    async function carregarTabela() {
-      const container = document.getElementById('tabelaContainer');
-      const leagueCode = document.getElementById('competicaoTabela').value;
+    function obterOuPedirChave() {
+      // Retorna diretamente a sua chave ativa do AI Studio
+      return 'AQ.Ab8RN6JzzPP0Hz5KkE3YIAYn0WSICYRn...HMcA';
+    }
+
+    async function carregarJogos() {
+      const container = document.getElementById('listaJogos');
+      const liga = document.getElementById('competicaoJogos').value;
+      const apiKey = obterOuPedirChave();
+
       container.innerHTML = `<div class="spinner"></div>`;
 
-      try {
-        const response = await fetch(`https://api.openligadb.de/getbltable/${leagueCode}/2025`);
-        if (!response.ok) throw new Error();
-        const data = await response.json();
+      const prompt = `Liste os próximos jogos mais recentes ou da rodada atual do campeonato ${liga}.
+Retorne um JSON com um array chamado "jogos", onde cada item é um objeto com as chaves: "home" (nome do time mandante), "away" (nome do time visitante), "data" (data ex: 23/08) e "hora" (horário ex: 21:30).`;
 
-        if (!data || data.length === 0) throw new Error();
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: "OBJECT",
+                properties: {
+                  jogos: {
+                    type: "ARRAY",
+                    items: {
+                      type: "OBJECT",
+                      properties: {
+                        home: { type: "STRING" },
+                        away: { type: "STRING" },
+                        data: { type: "STRING" },
+                        hora: { type: "STRING" }
+                      },
+                      required: ["home", "away", "data", "hora"]
+                    }
+                  }
+                },
+                required: ["jogos"]
+              }
+            }
+          })
+        });
+
+        const resData = await response.json();
+        if (!response.ok) throw new Error(resData.error?.message || 'Erro na requisição');
+
+        const result = JSON.parse(resData.candidates[0].content.parts[0].text);
+        const jogos = result.jogos || [];
+
+        if (jogos.length === 0) {
+          container.innerHTML = `<p style="text-align:center; color: var(--muted); padding:10px;">Nenhum jogo encontrado para ${liga}.</p>`;
+          return;
+        }
+
+        let html = '';
+        jogos.forEach(m => {
+          html += `
+            <div class="match-item">
+              <div>
+                <div class="match-teams">${m.home} vs ${m.away}</div>
+                <div class="match-time">${m.data} ${m.hora ? 'às ' + m.hora : ''}</div>
+              </div>
+              <button class="btn-small" onclick="preencherAnalise('${m.home}', '${m.away}')">Analisar</button>
+            </div>`;
+        });
+
+        container.innerHTML = html;
+
+      } catch (e) {
+        container.innerHTML = `<p style="color:var(--danger); text-align:center; padding:10px;">Erro ao carregar jogos (${e.message}).</p>`;
+      }
+    }
+
+    async function carregarTabela() {
+      const container = document.getElementById('tabelaContainer');
+      const liga = document.getElementById('competicaoTabela').value;
+      const apiKey = obterOuPedirChave();
+
+      container.innerHTML = `<div class="spinner"></div>`;
+
+      const prompt = `Forneça a tabela de classificação atualizada da ${liga}.
+Retorne um JSON com uma chave "tabela", contendo um array de objetos com as propriedades: "posicao" (número), "time" (string), "pontos" (número), "jogos" (número), "saldo" (número ou string). Ordene do 1º colocado em diante.`;
+
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: "OBJECT",
+                properties: {
+                  tabela: {
+                    type: "ARRAY",
+                    items: {
+                      type: "OBJECT",
+                      properties: {
+                        posicao: { type: "INTEGER" },
+                        time: { type: "STRING" },
+                        pontos: { type: "INTEGER" },
+                        jogos: { type: "INTEGER" },
+                        saldo: { type: "STRING" }
+                      },
+                      required: ["posicao", "time", "pontos", "jogos", "saldo"]
+                    }
+                  }
+                },
+                required: ["tabela"]
+              }
+            }
+          })
+        });
+
+        const resData = await response.json();
+        if (!response.ok) throw new Error(resData.error?.message || 'Erro na requisição');
+
+        const result = JSON.parse(resData.candidates[0].content.parts[0].text);
+        const tabela = result.tabela || [];
+
+        if (tabela.length === 0) {
+          container.innerHTML = `<p style="text-align:center; color: var(--muted); padding:10px;">Tabela indisponível.</p>`;
+          return;
+        }
 
         let html = `
           <table>
@@ -266,14 +382,14 @@
             </thead>
             <tbody>`;
 
-        data.forEach((row, i) => {
+        tabela.forEach(row => {
           html += `
             <tr>
-              <td>${i + 1}</td>
-              <td>${row.teamName || row.shortName}</td>
-              <td><b>${row.points}</b></td>
-              <td>${row.matches}</td>
-              <td>${row.goalDiff}</td>
+              <td>${row.posicao}</td>
+              <td>${row.time}</td>
+              <td><b>${row.pontos}</b></td>
+              <td>${row.jogos}</td>
+              <td>${row.saldo}</td>
             </tr>`;
         });
 
@@ -281,50 +397,7 @@
         container.innerHTML = html;
 
       } catch (e) {
-        container.innerHTML = `<p style="text-align:center; color: var(--muted); font-size: 0.85rem; padding: 15px;">
-          Tabela temporariamente indisponível para esta liga via API gratuita.<br><br>
-          <span style="color: var(--primary);">Dica:</span> Utilize o <b>Analisador IA</b> para consultar o momento e estatísticas dos times.
-        </p>`;
-      }
-    }
-
-    async function carregarJogos() {
-      const container = document.getElementById('listaJogos');
-      const idLiga = document.getElementById('competicaoJogos').value;
-      container.innerHTML = `<div class="spinner"></div>`;
-
-      try {
-        const url = `https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id=${idLiga}`;
-        const response = await fetch(url);
-        const data = await response.json();
-        const events = data.events || [];
-
-        if (events.length === 0) {
-          container.innerHTML = `<p style="text-align:center; color: var(--muted); font-size: 0.85rem; padding: 10px;">Nenhum jogo próximo cadastrado para esta liga.</p>`;
-          return;
-        }
-
-        let html = '';
-        events.slice(0, 10).forEach(m => {
-          const home = m.strHomeTeam;
-          const away = m.strAwayTeam;
-          const dataJogo = m.dateEvent || '';
-          const hora = m.strTime ? m.strTime.substring(0, 5) : '';
-
-          html += `
-            <div class="match-item">
-              <div>
-                <div class="match-teams">${home} vs ${away}</div>
-                <div class="match-time">${dataJogo} ${hora ? 'às ' + hora : ''}</div>
-              </div>
-              <button class="btn-small" onclick="preencherAnalise('${home}', '${away}')">Analisar</button>
-            </div>`;
-        });
-
-        container.innerHTML = html;
-
-      } catch (e) {
-        container.innerHTML = `<p style="color:var(--danger); text-align:center; font-size:0.85rem; padding: 10px;">Erro ao carregar jogos da liga.</p>`;
+        container.innerHTML = `<p style="color:var(--danger); text-align:center; padding:10px;">Erro ao carregar classificação (${e.message}).</p>`;
       }
     }
 
@@ -332,25 +405,6 @@
       switchTab(2);
       document.getElementById('manualHome').value = home;
       document.getElementById('manualAway').value = away;
-    }
-
-    function obterOuPedirChave() {
-      let key = localStorage.getItem('GEMINI_KEY');
-      if (!key) {
-        key = prompt("Informe sua Chave de API do Gemini (AIzaSy...):");
-        if (key && key.trim().startsWith('AIzaSy')) {
-          localStorage.setItem('GEMINI_KEY', key.trim());
-        } else if (key) {
-          alert("A chave informada parece inválida. Lembre-se que ela começa com AIzaSy...");
-          return null;
-        }
-      }
-      return key;
-    }
-
-    function redefinirChave() {
-      localStorage.removeItem('GEMINI_KEY');
-      alert("Chave removida. Você poderá digitar a nova chave ao gerar a próxima análise.");
     }
 
     async function analisarComIA() {
@@ -364,7 +418,6 @@
       const esporte = document.getElementById('esporte').value;
 
       const apiKey = obterOuPedirChave();
-      if (!apiKey) return;
 
       if (!home || !away) {
         return alert('Preencha os dois times!');

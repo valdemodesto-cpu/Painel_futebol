@@ -3,15 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Datafoot IA</title>
-  <link rel="icon" type="image/png" href="1787440803187.png">
-  <link rel="apple-touch-icon" href="1787440803187.png">
+  <title>Painel de Basquete & IA Pro</title>
   <style>
     :root {
       --bg: #0d0e12;
       --card-bg: #16181e;
-      --primary: #00e676;
-      --primary-hover: #00c853;
+      --primary: #ff9800;
+      --primary-hover: #f57c00;
       --text: #f1f5f9;
       --muted: #94a3b8;
       --border: #27272a;
@@ -112,12 +110,24 @@
       justify-content: space-between;
       align-items: center;
     }
-    .match-teams { font-size: 0.9rem; font-weight: bold; }
-    .match-time { font-size: 0.75rem; color: var(--primary); margin-top: 2px; }
+    .match-teams { font-size: 0.9rem; font-weight: bold; display: flex; flex-direction: column; gap: 4px; }
+    .team-row { display: flex; align-items: center; gap: 8px; }
+    .team-logo { width: 20px; height: 20px; object-fit: contain; }
+    .match-time { font-size: 0.75rem; color: var(--primary); margin-top: 4px; }
 
-    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .conf-title {
+      color: var(--primary);
+      margin: 14px 0 6px 0;
+      font-size: 0.95rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 12px; }
     th, td { padding: 8px 6px; text-align: left; border-bottom: 1px solid var(--border); }
     th { color: var(--muted); font-weight: 600; }
+    .table-team { display: flex; align-items: center; gap: 6px; }
 
     .analysis {
       background: #09090b;
@@ -126,29 +136,35 @@
       border-radius: 0 8px 8px 0;
       margin-top: 12px;
     }
+    .player-prop {
+      background: #16181e;
+      padding: 8px;
+      border-radius: 6px;
+      margin-top: 8px;
+      border: 1px solid var(--border);
+    }
   </style>
 </head>
 <body>
 
-  <h1>Datafoot IA</h1>
+  <h1>Painel de Basquete & IA Pro</h1>
 
   <div class="tabs">
-    <div class="tab active" onclick="switchTab(0)">⚽ Jogos Hoje</div>
-    <div class="tab" onclick="switchTab(1)">🏆 Classificação</div>
-    <div class="tab" onclick="switchTab(2)">🤖 Analisador IA</div>
+    <div class="tab active" id="btn-tab-0">&#127936; Próximos Jogos</div>
+    <div class="tab" id="btn-tab-1">&#127942; Classificação</div>
+    <div class="tab" id="btn-tab-2">&#129302; Analisador IA</div>
   </div>
 
-  <!-- ABA 1: JOGOS DO DIA -->
-  <div class="tab-content active" id="tab-jogos">
+  <!-- ABA 1: JOGOS -->
+  <div class="tab-content active" id="conteudo-tab-0">
     <div class="card">
       <div class="form-group">
-        <label>Selecione a Competição</label>
-        <select id="competicaoJogos" onchange="carregarJogos()">
-          <option value="Brasileirão Série A">🇧🇷 Brasileirão Série A</option>
-          <option value="Premier League">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
-          <option value="La Liga">🇪🇸 La Liga</option>
-          <option value="Serie A Itália">🇮🇹 Serie A (Itália)</option>
-          <option value="Ligue 1">🇫🇷 Ligue 1</option>
+        <label>Selecione a Liga</label>
+        <select id="ligaJogos">
+          <option value="nba">NBA</option>
+          <option value="wnba" selected>WNBA</option>
+          <option value="mens-euroleague">EuroLiga</option>
+          <option value="bra.1">NBB (Brasil)</option>
         </select>
       </div>
       <div id="listaJogos"></div>
@@ -156,16 +172,15 @@
   </div>
 
   <!-- ABA 2: CLASSIFICAÇÃO -->
-  <div class="tab-content" id="tab-tabela">
+  <div class="tab-content" id="conteudo-tab-1">
     <div class="card">
       <div class="form-group">
-        <label>Selecione o Campeonato</label>
-        <select id="competicaoTabela" onchange="carregarTabela()">
-          <option value="Brasileirão Série A">🇧🇷 Brasileirão Série A</option>
-          <option value="Premier League">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
-          <option value="La Liga">🇪🇸 La Liga</option>
-          <option value="Serie A Itália">🇮🇹 Serie A (Itália)</option>
-          <option value="Ligue 1">🇫🇷 Ligue 1</option>
+        <label>Selecione a Liga</label>
+        <select id="ligaTabela">
+          <option value="nba">NBA</option>
+          <option value="wnba" selected>WNBA</option>
+          <option value="mens-euroleague">EuroLiga</option>
+          <option value="bra.1">NBB (Brasil)</option>
         </select>
       </div>
       <div id="tabelaContainer" style="overflow-x: auto;"></div>
@@ -173,30 +188,29 @@
   </div>
 
   <!-- ABA 3: ANALISADOR IA -->
-  <div class="tab-content" id="tab-analisador">
+  <div class="tab-content" id="conteudo-tab-2">
     <div class="card">
       <div class="grid-2">
         <div class="form-group">
           <label>Esporte</label>
           <select id="esporte">
-            <option value="Futebol">Futebol</option>
-            <option value="Basquete (NBA)">Basquete (NBA)</option>
+            <option value="Basquete">Basquete</option>
           </select>
         </div>
         <div class="form-group">
           <label>Liga / Campeonato</label>
-          <input type="text" id="liga" placeholder="Ex: Brasileirão Série A">
+          <input type="text" id="liga" placeholder="Ex: NBA, WNBA, EuroLiga">
         </div>
       </div>
 
       <div class="grid-2">
         <div class="form-group">
           <label>Time Casa / Mandante</label>
-          <input type="text" id="manualHome" placeholder="Ex: Flamengo">
+          <input type="text" id="manualHome" placeholder="Ex: Boston Celtics">
         </div>
         <div class="form-group">
           <label>Time Fora / Visitante</label>
-          <input type="text" id="manualAway" placeholder="Ex: Palmeiras">
+          <input type="text" id="manualAway" placeholder="Ex: LA Lakers">
         </div>
       </div>
 
@@ -210,201 +224,212 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Observações / Infos</label>
-          <input type="text" id="observacoes" placeholder="Ex: Titulares poupados">
+          <label>Observações / Desfalques</label>
+          <input type="text" id="observacoes" placeholder="Ex: Jogador X lesionado">
         </div>
       </div>
 
-      <button id="btnAnalisar" onclick="analisarComIA()">Gerar Análise</button>
+      <button id="btnAnalisar">Gerar Análise Avançada</button>
       <div id="analiseArea"></div>
     </div>
   </div>
 
   <script>
+    const GEMINI_API_KEY = 'AQ.Ab8RN6KI_2hgmoYEbuoZ-ohSecyUytC76f0bKJTsys2gPy1Qpg';
+
     document.addEventListener('DOMContentLoaded', () => {
+      // Configurar eventos das abas
+      document.getElementById('btn-tab-0').addEventListener('click', () => mudarAba(0));
+      document.getElementById('btn-tab-1').addEventListener('click', () => mudarAba(1));
+      document.getElementById('btn-tab-2').addEventListener('click', () => mudarAba(2));
+
+      document.getElementById('ligaJogos').addEventListener('change', carregarJogos);
+      document.getElementById('ligaTabela').addEventListener('change', carregarTabela);
+      document.getElementById('btnAnalisar').addEventListener('click', analisarComIA);
+
       carregarJogos();
     });
 
-    function switchTab(index) {
-      const tabs = document.querySelectorAll('.tab');
-      const contents = document.querySelectorAll('.tab-content');
-      
-      tabs.forEach((t, i) => {
-        t.classList.toggle('active', i === index);
-        contents[i].classList.toggle('active', i === index);
-      });
+    function mudarAba(index) {
+      for (let i = 0; i <= 2; i++) {
+        const btn = document.getElementById('btn-tab-' + i);
+        const content = document.getElementById('conteudo-tab-' + i);
+        if (btn && content) {
+          if (i === index) {
+            btn.classList.add('active');
+            content.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+            content.classList.remove('active');
+          }
+        }
+      }
 
-      if(index === 0) carregarJogos();
-      if(index === 1) carregarTabela();
+      if (index === 1) carregarTabela();
     }
 
-    function obterOuPedirChave() {
-      // Retorna diretamente a sua chave ativa do AI Studio
-      return 'AQ.Ab8RN6JzzPP0Hz5KkE3YIAYn0WSICYRn...HMcA';
+    function formatarDataAPI(date) {
+      const ano = date.getFullYear();
+      const mes = String(date.getMonth() + 1).padStart(2, '0');
+      const dia = String(date.getDate()).padStart(2, '0');
+      return `${ano}${mes}${dia}`;
     }
 
     async function carregarJogos() {
       const container = document.getElementById('listaJogos');
-      const liga = document.getElementById('competicaoJogos').value;
-      const apiKey = obterOuPedirChave();
-
+      const liga = document.getElementById('ligaJogos').value;
       container.innerHTML = `<div class="spinner"></div>`;
 
-      const prompt = `Liste os próximos jogos mais recentes ou da rodada atual do campeonato ${liga}.
-Retorne um JSON com um array chamado "jogos", onde cada item é um objeto com as chaves: "home" (nome do time mandante), "away" (nome do time visitante), "data" (data ex: 23/08) e "hora" (horário ex: 21:30).`;
+      const hoje = new Date();
+      const daquiASeteDias = new Date();
+      daquiASeteDias.setDate(hoje.getDate() + 7);
+
+      const inicio = formatarDataAPI(hoje);
+      const fim = formatarDataAPI(daquiASeteDias);
+      const intervaloDatas = `${inicio}-${fim}`;
 
       try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              responseMimeType: "application/json",
-              responseSchema: {
-                type: "OBJECT",
-                properties: {
-                  jogos: {
-                    type: "ARRAY",
-                    items: {
-                      type: "OBJECT",
-                      properties: {
-                        home: { type: "STRING" },
-                        away: { type: "STRING" },
-                        data: { type: "STRING" },
-                        hora: { type: "STRING" }
-                      },
-                      required: ["home", "away", "data", "hora"]
-                    }
-                  }
-                },
-                required: ["jogos"]
-              }
-            }
-          })
-        });
+        const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/basketball/${liga}/scoreboard?dates=${intervaloDatas}`);
+        if (!res.ok) throw new Error('Erro na requisição');
 
-        const resData = await response.json();
-        if (!response.ok) throw new Error(resData.error?.message || 'Erro na requisição');
+        const data = await res.json();
+        const events = data.events || [];
 
-        const result = JSON.parse(resData.candidates[0].content.parts[0].text);
-        const jogos = result.jogos || [];
-
-        if (jogos.length === 0) {
-          container.innerHTML = `<p style="text-align:center; color: var(--muted); padding:10px;">Nenhum jogo encontrado para ${liga}.</p>`;
+        if (events.length === 0) {
+          container.innerHTML = `<p style="text-align:center; color: var(--muted); font-size: 0.85rem; padding: 10px;">Nenhum jogo agendado para os próximos 7 dias nesta liga.</p>`;
           return;
         }
 
-        let html = '';
-        jogos.forEach(m => {
-          html += `
-            <div class="match-item">
-              <div>
-                <div class="match-teams">${m.home} vs ${m.away}</div>
-                <div class="match-time">${m.data} ${m.hora ? 'às ' + m.hora : ''}</div>
+        container.innerHTML = '';
+        events.forEach(e => {
+          const competition = e.competitions[0];
+          const homeTeam = competition.competitors.find(c => c.homeAway === 'home')?.team;
+          const awayTeam = competition.competitors.find(c => c.homeAway === 'away')?.team;
+
+          const homeName = homeTeam?.displayName || 'Time Casa';
+          const awayName = awayTeam?.displayName || 'Time Fora';
+          const homeLogo = homeTeam?.logo || '';
+          const awayLogo = awayTeam?.logo || '';
+          
+          const dateObj = new Date(e.date);
+          const diaSemana = dateObj.toLocaleDateString('pt-BR', { weekday: 'short' }).toLowerCase();
+          const dataJogo = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+          const hora = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+          const ligaNome = data.leagues?.[0]?.name || liga.toUpperCase();
+
+          const itemDiv = document.createElement('div');
+          itemDiv.className = 'match-item';
+          itemDiv.innerHTML = `
+            <div>
+              <div class="match-teams">
+                <div class="team-row"><img src="${homeLogo}" class="team-logo" onerror="this.style.display='none'"><span>${homeName}</span></div>
+                <div style="font-size: 0.7rem; color: var(--muted); padding-left: 28px;">vs</div>
+                <div class="team-row"><img src="${awayLogo}" class="team-logo" onerror="this.style.display='none'"><span>${awayName}</span></div>
               </div>
-              <button class="btn-small" onclick="preencherAnalise('${m.home}', '${m.away}')">Analisar</button>
-            </div>`;
+              <div class="match-time">${diaSemana}, ${dataJogo} às ${hora}</div>
+            </div>
+            <button class="btn-small btn-analisar-jogo">Analisar</button>
+          `;
+
+          // Atribuição segura do evento de clique via JS nativo
+          itemDiv.querySelector('.btn-analisar-jogo').addEventListener('click', () => {
+            mudarAba(2);
+            document.getElementById('manualHome').value = homeName;
+            document.getElementById('manualAway').value = awayName;
+            document.getElementById('liga').value = ligaNome;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            analisarComIA();
+          });
+
+          container.appendChild(itemDiv);
         });
 
-        container.innerHTML = html;
-
       } catch (e) {
-        container.innerHTML = `<p style="color:var(--danger); text-align:center; padding:10px;">Erro ao carregar jogos (${e.message}).</p>`;
+        container.innerHTML = `<p style="text-align:center; color: var(--muted); font-size: 0.85rem; padding: 10px;">Erro ao carregar os jogos. Tente novamente.</p>`;
       }
     }
 
     async function carregarTabela() {
       const container = document.getElementById('tabelaContainer');
-      const liga = document.getElementById('competicaoTabela').value;
-      const apiKey = obterOuPedirChave();
-
+      const liga = document.getElementById('ligaTabela').value;
       container.innerHTML = `<div class="spinner"></div>`;
 
-      const prompt = `Forneça a tabela de classificação atualizada da ${liga}.
-Retorne um JSON com uma chave "tabela", contendo um array de objetos com as propriedades: "posicao" (número), "time" (string), "pontos" (número), "jogos" (número), "saldo" (número ou string). Ordene do 1º colocado em diante.`;
-
       try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              responseMimeType: "application/json",
-              responseSchema: {
-                type: "OBJECT",
-                properties: {
-                  tabela: {
-                    type: "ARRAY",
-                    items: {
-                      type: "OBJECT",
-                      properties: {
-                        posicao: { type: "INTEGER" },
-                        time: { type: "STRING" },
-                        pontos: { type: "INTEGER" },
-                        jogos: { type: "INTEGER" },
-                        saldo: { type: "STRING" }
-                      },
-                      required: ["posicao", "time", "pontos", "jogos", "saldo"]
-                    }
-                  }
-                },
-                required: ["tabela"]
-              }
+        const res = await fetch(`https://site.api.espn.com/apis/v2/sports/basketball/${liga}/standings`);
+        if (!res.ok) throw new Error('Erro ao carregar tabela.');
+        const data = await res.json();
+
+        let html = '';
+
+        if (data.children && data.children.length > 0) {
+          data.children.forEach(conf => {
+            const confNome = conf.name || 'Conferência';
+            let entries = conf.standings?.entries || [];
+            if (entries.length > 0) {
+              html += `<div class="conf-title">${confNome}</div>`;
+              html += renderTabelaHTML(entries);
             }
-          })
-        });
+          });
+        } else if (data.standings?.entries) {
+          html = renderTabelaHTML(data.standings.entries);
+        }
 
-        const resData = await response.json();
-        if (!response.ok) throw new Error(resData.error?.message || 'Erro na requisição');
-
-        const result = JSON.parse(resData.candidates[0].content.parts[0].text);
-        const tabela = result.tabela || [];
-
-        if (tabela.length === 0) {
-          container.innerHTML = `<p style="text-align:center; color: var(--muted); padding:10px;">Tabela indisponível.</p>`;
+        if (!html) {
+          container.innerHTML = `<p style="text-align:center; color: var(--muted); font-size: 0.85rem; padding: 10px;">Tabela indisponível no momento.</p>`;
           return;
         }
 
-        let html = `
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Time</th>
-                <th>P</th>
-                <th>J</th>
-                <th>SG</th>
-              </tr>
-            </thead>
-            <tbody>`;
-
-        tabela.forEach(row => {
-          html += `
-            <tr>
-              <td>${row.posicao}</td>
-              <td>${row.time}</td>
-              <td><b>${row.pontos}</b></td>
-              <td>${row.jogos}</td>
-              <td>${row.saldo}</td>
-            </tr>`;
-        });
-
-        html += `</tbody></table>`;
         container.innerHTML = html;
-
       } catch (e) {
-        container.innerHTML = `<p style="color:var(--danger); text-align:center; padding:10px;">Erro ao carregar classificação (${e.message}).</p>`;
+        container.innerHTML = `<p style="text-align:center; color: var(--muted); font-size: 0.85rem; padding: 10px;">Classificação indisponível para esta liga no momento.</p>`;
       }
     }
 
-    function preencherAnalise(home, away) {
-      switchTab(2);
-      document.getElementById('manualHome').value = home;
-      document.getElementById('manualAway').value = away;
+    function renderTabelaHTML(entries) {
+      let html = `
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Time</th>
+              <th>V</th>
+              <th>D</th>
+              <th>%</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+      entries.forEach((row, idx) => {
+        const stats = row.stats || [];
+        const getStat = (name) => {
+          const item = stats.find(s => s.name === name || s.type === name);
+          return item ? item.value : 0;
+        };
+
+        const wins = getStat('wins');
+        const losses = getStat('losses');
+        const winPercent = (getStat('winPercent') * 100).toFixed(1);
+        const teamName = row.team?.displayName || 'Time';
+        const teamLogo = row.team?.logos?.[0]?.href || row.team?.logo || '';
+
+        html += `
+          <tr>
+            <td>${idx + 1}</td>
+            <td>
+              <div class="table-team">
+                <img src="${teamLogo}" class="team-logo" onerror="this.style.display='none'">
+                <span>${teamName}</span>
+              </div>
+            </td>
+            <td><b>${wins}</b></td>
+            <td>${losses}</td>
+            <td>${winPercent}%</td>
+          </tr>`;
+      });
+
+      html += `</tbody></table>`;
+      return html;
     }
 
     async function analisarComIA() {
@@ -415,22 +440,30 @@ Retorne um JSON com uma chave "tabela", contendo um array de objetos com as prop
       const obs = document.getElementById('observacoes').value.trim();
       const risco = document.getElementById('risco').value;
       const liga = document.getElementById('liga').value;
-      const esporte = document.getElementById('esporte').value;
-
-      const apiKey = obterOuPedirChave();
 
       if (!home || !away) {
         return alert('Preencha os dois times!');
       }
 
       btn.disabled = true;
-      analiseArea.innerHTML = `<div class="spinner"></div><p style="text-align:center; color: var(--muted); font-size: 0.85rem;">IA gerando relatório da partida...</p>`;
+      analiseArea.innerHTML = `<div class="spinner"></div><p style="text-align:center; color: var(--muted); font-size: 0.85rem;">Gerando análise...</p>`;
 
-      const prompt = `Análise de aposta esportiva: ${home} vs ${away} (${esporte}, Liga: ${liga || 'Geral'}). Risco: ${risco}. ${obs ? 'Obs: ' + obs : ''}.
-Retorne um JSON contendo: mercado, entrada, probabilidade, confianca e justificativa.`;
+      const prompt = `Analise o jogo de basquete: ${home} vs ${away} (Liga: ${liga || 'Geral'}). Nível de risco: ${risco}. ${obs ? 'Observações: ' + obs : ''}.
+Forneça palpite de jogo e jogador em JSON exatamente assim:
+{
+  "mercado": "Vencedor / Total de Pontos",
+  "entrada": "Palpite da Partida",
+  "probabilidade": "75%",
+  "confianca": "Alta",
+  "justificativa": "Resumo da análise",
+  "jogador_nome": "Nome do Jogador",
+  "jogador_palpite": "Mais de 20.5 Pontos",
+  "jogador_media": "22.4 pts",
+  "jogador_motivo": "Explicacao rapida"
+}`;
 
       try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`;
 
         const response = await fetch(url, {
           method: 'POST',
@@ -438,18 +471,7 @@ Retorne um JSON contendo: mercado, entrada, probabilidade, confianca e justifica
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
-              responseMimeType: "application/json",
-              responseSchema: {
-                type: "OBJECT",
-                properties: {
-                  mercado: { type: "STRING" },
-                  entrada: { type: "STRING" },
-                  probabilidade: { type: "STRING" },
-                  confianca: { type: "STRING" },
-                  justificativa: { type: "STRING" }
-                },
-                required: ["mercado", "entrada", "probabilidade", "confianca", "justificativa"]
-              }
+              responseMimeType: "application/json"
             }
           })
         });
@@ -457,18 +479,27 @@ Retorne um JSON contendo: mercado, entrada, probabilidade, confianca e justifica
         const data = await response.json();
         if (!response.ok) throw new Error(data.error?.message || 'Erro na requisição');
 
-        const res = JSON.parse(data.candidates[0].content.parts[0].text);
+        const rawText = data.candidates[0].content.parts[0].text;
+        const res = JSON.parse(rawText);
 
         analiseArea.innerHTML = `
           <div class="analysis">
-            <h3 style="margin-bottom:6px; font-size:1.1rem;">${home} vs ${away}</h3>
-            <div style="font-size: 0.9rem; color: var(--muted);">${res.mercado}</div>
-            <div style="font-size: 1.2rem; font-weight:bold; margin: 6px 0; color: var(--primary);">${res.entrada}</div>
-            <div style="font-size:0.8rem; color:var(--primary); margin-bottom:6px;">Probabilidade: ${res.probabilidade} | Confiança: ${res.confianca}</div>
-            <p style="font-size:0.85rem; color:#ccc; line-height: 1.3;">${res.justificativa}</p>
+            <h3 style="margin-bottom:4px; font-size:1.1rem;">${home} vs ${away}</h3>
+            <div style="font-size: 0.85rem; color: var(--muted);">${res.mercado}</div>
+            <div style="font-size: 1.1rem; font-weight:bold; margin: 4px 0; color: var(--primary);">${res.entrada}</div>
+            <div style="font-size:0.75rem; color:var(--primary); margin-bottom:10px;">Probabilidade: ${res.probabilidade} | Confiança: ${res.confianca}</div>
+            <p style="font-size:0.85rem; color:#ccc; line-height: 1.3; margin-bottom: 12px;">${res.justificativa}</p>
+            
+            <div class="player-prop">
+              <div style="font-size:0.8rem; color:var(--primary); font-weight:bold; text-transform:uppercase;">&#128293; Destaque Individual</div>
+              <div style="font-size:0.95rem; font-weight:bold; margin-top:2px;">${res.jogador_nome}</div>
+              <div style="font-size:0.9rem; color:#fff; font-weight:bold; margin: 2px 0;">Entrada: <span style="color:var(--primary);">${res.jogador_palpite}</span></div>
+              <div style="font-size:0.8rem; color:var(--muted);">Média estimada: ${res.jogador_media}</div>
+              <p style="font-size:0.8rem; color:#aaa; margin-top:4px;">${res.jogador_motivo}</p>
+            </div>
           </div>`;
       } catch (e) {
-        analiseArea.innerHTML = `<p style="color: var(--danger); text-align: center; margin-top:10px; font-size:0.85rem;">Erro: ${e.message}</p>`;
+        analiseArea.innerHTML = `<p style="color: var(--danger); text-align: center; margin-top:10px; font-size:0.85rem;">Erro na análise: ${e.message}</p>`;
       } finally {
         btn.disabled = false;
       }
